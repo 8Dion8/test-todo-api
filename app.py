@@ -13,7 +13,7 @@ def get_db():
         db.row_factory = sqlite3.Row
     return db
 
-
+# close connection to db on service exit
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
@@ -33,7 +33,8 @@ def init_db():
         ''')
         db.commit()
 
-
+# Task creation endpoint; requires 'text' and 'status' JSON fields
+# Response: Created task object with ID if successful, 400 if not
 @app.route('/api/v1/tasks', methods=['POST'])
 def create_task():
     data = request.get_json()
@@ -50,7 +51,8 @@ def create_task():
     task_id = cursor.lastrowid
     return jsonify({"id": task_id, "text": text, "status": status}), 201
 
-
+# Task return endpoint; optional filtering by 'status' field
+# Response: array of task objects
 @app.route('/api/v1/tasks', methods=['GET'])
 def get_tasks():
     status_filter = request.args.get('status')
@@ -62,7 +64,8 @@ def get_tasks():
     result = [dict(task) for task in tasks]
     return jsonify(result), 200
 
-
+# Task status updating endpoint; task ID in URL path 
+# Response: Updated task object
 @app.route('/api/v1/tasks/<int:task_id>/status', methods=['PUT'])
 def update_task_status(task_id):
     data = request.get_json()
@@ -81,7 +84,8 @@ def update_task_status(task_id):
     task = db.execute('SELECT * FROM task WHERE id = ?', (task_id,)).fetchone()
     return jsonify(dict(task)), 200
 
-
+# Task deletion endpoint; task ID in URL path
+# Response: Deletion confirmation
 @app.route('/api/v1/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     db = get_db()
